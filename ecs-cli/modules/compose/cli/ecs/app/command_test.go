@@ -1,4 +1,4 @@
-// Copyright 2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2015-2016 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"). You may
 // not use this file except in compliance with the License. A copy of the
@@ -37,8 +37,11 @@ func TestPopulateWithGlobalFlagOverrides(t *testing.T) {
 
 	populate(ecsContext, cliContext)
 
-	if composeFileNameTest != ecsContext.ComposeFile {
-		t.Errorf("ComposeFile not overriden. Expected [%s] Got [%s]", composeFileNameTest, ecsContext.ComposeFile)
+	if len(ecsContext.ComposeFiles) != 1 {
+		t.Fatalf("ComposeFiles not set. Expected [%s] Got empty", composeFileNameTest)
+	}
+	if composeFileNameTest != ecsContext.ComposeFiles[0] {
+		t.Errorf("ComposeFile not overriden. Expected [%s] Got [%s]", composeFileNameTest, ecsContext.ComposeFiles[0])
 	}
 	if projectNameTest != ecsContext.ProjectName {
 		t.Errorf("ProjectName not overriden. Expected [%s] Got [%s]", projectNameTest, ecsContext.ProjectName)

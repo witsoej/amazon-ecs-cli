@@ -1,4 +1,4 @@
-// Copyright 2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2015-2016 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"). You may
 // not use this file except in compliance with the License. A copy of the
@@ -22,6 +22,9 @@ import (
 	"github.com/aws/amazon-ecs-cli/ecs-cli/modules/compose/ecs/utils"
 	"github.com/codegangsta/cli"
 )
+
+// displayTitle flag is used to print the title for the fields
+const displayTitle = true
 
 // ProjectAction is an adapter to allow the use of ordinary functions as libcompose actions.
 // Any function that has the appropriate signature can be register as an action on a codegansta/cli command.
@@ -79,7 +82,7 @@ func ProjectPs(p ecscompose.Project, c *cli.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	os.Stdout.WriteString(allInfo.String())
+	os.Stdout.WriteString(allInfo.String(displayTitle))
 }
 
 // ProjectRun starts containers and executes one-time command against the container

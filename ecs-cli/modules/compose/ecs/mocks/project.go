@@ -1,4 +1,4 @@
-// Copyright 2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2015-2016 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"). You may
 // not use this file except in compliance with the License. A copy of the
@@ -18,7 +18,8 @@ package mock_ecs
 
 import (
 	ecs "github.com/aws/amazon-ecs-cli/ecs-cli/modules/compose/ecs"
-	libcompose "github.com/aws/amazon-ecs-cli/ecs-cli/modules/compose/libcompose"
+	config "github.com/docker/libcompose/config"
+	project "github.com/docker/libcompose/project"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -83,9 +84,9 @@ func (_mr *_MockProjectRecorder) Entity() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Entity")
 }
 
-func (_m *MockProject) Info() (libcompose.InfoSet, error) {
+func (_m *MockProject) Info() (project.InfoSet, error) {
 	ret := _m.ctrl.Call(_m, "Info")
-	ret0, _ := ret[0].(libcompose.InfoSet)
+	ret0, _ := ret[0].(project.InfoSet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -134,9 +135,9 @@ func (_mr *_MockProjectRecorder) Scale(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Scale", arg0)
 }
 
-func (_m *MockProject) ServiceConfigs() map[string]*libcompose.ServiceConfig {
+func (_m *MockProject) ServiceConfigs() *config.ServiceConfigs {
 	ret := _m.ctrl.Call(_m, "ServiceConfigs")
-	ret0, _ := ret[0].(map[string]*libcompose.ServiceConfig)
+	ret0, _ := ret[0].(*config.ServiceConfigs)
 	return ret0
 }
 

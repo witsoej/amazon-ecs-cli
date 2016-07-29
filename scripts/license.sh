@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright 2015-2016 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You may
 # not use this file except in compliance with the License. A copy of the
@@ -18,15 +18,19 @@ set -e
 outputfile=${1?Must provide an output file}
 inputfile="$(<../../LICENSE)"
 
-for user in ./../vendor/src/github.com/*; do
+for user in ./../vendor/github.com/*; do
   for repo in $user/*; do
     inputfile+=$'\n'"***"$'\n'"$repo"$'\n\n'
-    inputfile+="$(<$repo/LICENSE*)"$'\n'
+    if [ -f $repo/LICENSE* ]; then
+      inputfile+="$(<$repo/LICENSE*)"$'\n'
+    elif [ -f $repo/COPYING* ]; then
+      inputfile+="$(<$repo/COPYING*)"$'\n'
+    fi;
   done;
 done;
 
 cat << EOF > "${outputfile}"
-// Copyright 2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2015-2016 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"). You may
 // not use this file except in compliance with the License. A copy of the

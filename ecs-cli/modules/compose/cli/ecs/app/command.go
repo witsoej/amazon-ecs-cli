@@ -1,4 +1,4 @@
-// Copyright 2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2015-2016 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"). You may
 // not use this file except in compliance with the License. A copy of the
@@ -86,7 +86,7 @@ func commonComposeFlags() []cli.Flag {
 			EnvVar: "COMPOSE_FILE",
 		},
 		cli.StringFlag{
-			Name:   projectNameFlag + ",p",
+			Name:   ecscompose.ProjectNameFlag + ",p",
 			Usage:  "Specifies the project name to use. Defaults to the current directory name.",
 			EnvVar: "COMPOSE_PROJECT_NAME",
 		},
@@ -95,8 +95,9 @@ func commonComposeFlags() []cli.Flag {
 
 // populate updates the specified ecs context based on command line arguments and subcommands.
 func populate(ecsContext *ecscompose.Context, cliContext *cli.Context) {
-	ecsContext.ComposeFile = cliContext.GlobalString(composeFileNameFlag)
-	ecsContext.ProjectName = cliContext.GlobalString(projectNameFlag)
+	// TODO: Support multiple compose files
+	ecsContext.ComposeFiles = []string{cliContext.GlobalString(composeFileNameFlag)}
+	ecsContext.ProjectName = cliContext.GlobalString(ecscompose.ProjectNameFlag)
 }
 
 func createCommand(factory ProjectFactory) cli.Command {
