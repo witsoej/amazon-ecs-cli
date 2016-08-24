@@ -19,6 +19,8 @@ import (
 	"testing"
 )
 
+const testClusterName = "test-cluster"
+
 func newMockDestination() (*Destination, error) {
 	tmpPath, err := ioutil.TempDir(os.TempDir(), "ecs-cli-test-")
 	if err != nil {
@@ -53,6 +55,67 @@ func setupParser(t *testing.T, dest *Destination, shouldBeInitialized bool) *Ini
 	return parser
 }
 
+func createConfig(t *testing.T, parser *IniReadWriter, dest *Destination) {
+	// Create a new config file
+	newConfig := &CliConfig{&SectionKeys{Cluster: testClusterName}}
+	err := parser.ReadFrom(newConfig)
+	if err != nil {
+		t.Fatalf("Could not create config from struct", err)
+	}
+
+	err = parser.Save(dest)
+	if err != nil {
+		t.Fatalf("Could not save config file", err)
+	}
+}
+
+func TestConfigPermissions(t *testing.T) {
+	dest, err := newMockDestination()
+	if err != nil {
+		t.Fatal("Error creating mock config destination:", err)
+	}
+	parser := setupParser(t, dest, false)
+
+	err = os.MkdirAll(dest.Path, *dest.Mode)
+	if err != nil {
+		t.Fatalf("Could not create config directory: ", err)
+	}
+	defer os.RemoveAll(dest.Path)
+
+	// Create config file and confirm it has expected initial permissions
+	createConfig(t, parser, dest)
+
+	path := configPath(dest)
+	confirmConfigMode(t, path, configFileMode)
+
+	// Now set the config mode to something bad
+	badMode := os.FileMode(0777)
+	err = os.Chmod(path, badMode)
+	if err != nil {
+		t.Fatalf("Unable to change mode of new config %v", path)
+	}
+	confirmConfigMode(t, path, badMode)
+
+	// Save the config and confirm it's fixed again
+	err = parser.Save(dest)
+	if err != nil {
+		t.Fatalf("Unable to save to new config %v", path)
+	}
+	confirmConfigMode(t, path, configFileMode)
+}
+
+func confirmConfigMode(t *testing.T, path string, expected os.FileMode) {
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("Unable to stat config file %s", path)
+	}
+
+	mode := info.Mode()
+	if mode != expected {
+		t.Fatalf("Mode of config %v not expected %v", mode, expected)
+	}
+}
+
 func TestNewConfigReadWriter(t *testing.T) {
 	dest, err := newMockDestination()
 	if err != nil {
@@ -66,20 +129,9 @@ func TestNewConfigReadWriter(t *testing.T) {
 	}
 	defer os.RemoveAll(dest.Path)
 
-	clusterName := "test-cluster"
-	// Craete a new config file
-	newConfig := &CliConfig{&SectionKeys{Cluster: clusterName}}
-	err = parser.ReadFrom(newConfig)
-	if err != nil {
-		t.Fatalf("Could not create config from struct", err)
-	}
+	createConfig(t, parser, dest)
 
-	err = parser.Save(dest)
-	if err != nil {
-		t.Fatalf("Could not save config file", err)
-	}
-
-	// Reinitialize from the writtern file.
+	// Reinitialize from the written file.
 	parser = setupParser(t, dest, true)
 
 	readConfig, err := parser.GetConfig()
@@ -87,8 +139,8 @@ func TestNewConfigReadWriter(t *testing.T) {
 		t.Errorf("Error reading config:", err)
 	}
 
-	if clusterName != readConfig.Cluster {
-		t.Errorf("Cluster name mismatch in config. Expected [%s] Got [%s]", clusterName, readConfig.Cluster)
+	if testClusterName != readConfig.Cluster {
+		t.Errorf("Cluster name mismatch in config. Expected [%s] Got [%s]", testClusterName, readConfig.Cluster)
 	}
 	if !parser.IsKeyPresent(ecsSectionKey, composeProjectNamePrefixKey) || readConfig.ComposeProjectNamePrefix != "" {
 		t.Errorf("Compose Project prefix name mismatch in config. Expected empty string Got [%s]", readConfig.ComposeProjectNamePrefix)

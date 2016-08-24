@@ -21,7 +21,10 @@ import (
 	"github.com/go-ini/ini"
 )
 
-const configFileName = "config"
+const (
+	configFileName = "config"
+	configFileMode = os.FileMode(0600)
+)
 
 // ReadWriter interface has methods to read and write ecs-cli config to and from the config file.
 type ReadWriter interface {
@@ -51,7 +54,7 @@ type IniReadWriter struct {
 
 // NewReadWriter creates a new Parser object.
 func NewReadWriter() (*IniReadWriter, error) {
-	dest, err := newDefaultDestionation()
+	dest, err := newDefaultDestination()
 	if err != nil {
 		return nil, err
 	}
@@ -103,24 +106,55 @@ func (rdwr *IniReadWriter) ReadFrom(ecsConfig *CliConfig) error {
 
 // Save saves the config to a config file.
 func (rdwr *IniReadWriter) Save(dest *Destination) error {
-	mode := dest.Mode
-	err := os.MkdirAll(dest.Path, *mode)
+	destMode := dest.Mode
+	err := os.MkdirAll(dest.Path, *destMode)
 	if err != nil {
 		return err
 	}
-	return rdwr.cfg.SaveTo(filepath.Join(dest.Path, configFileName))
+
+	path := configPath(dest)
+
+	// If config file exists, set permissions first, because we may be writing creds.
+	if _, err := os.Stat(path); err == nil {
+		err = os.Chmod(path, configFileMode)
+		if err != nil {
+			logrus.Errorf("Unable to chmod %s to mode %s", path, configFileMode)
+			return err
+		}
+	}
+
+	// Open the file, optionally creating it with our desired permissions.
+	// This will let us pass it (as io.Writer) to go-ini but let us control the file.
+	configFile, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, configFileMode)
+	if err != nil {
+		logrus.Errorf("Unable to open/create %s with mode %s", path, configFileMode)
+		return err
+	}
+	defer configFile.Close()
+
+	_, err = rdwr.cfg.WriteTo(configFile)
+	if err != nil {
+		logrus.Errorf("Unable to write config to %s", path)
+		return err
+	}
+
+	return nil
+}
+
+func configPath(dest *Destination) string {
+	return filepath.Join(dest.Path, configFileName)
 }
 
 func newIniConfig(dest *Destination) (*ini.File, error) {
 	iniCfg := ini.Empty()
-	filename := filepath.Join(dest.Path, configFileName)
-	logrus.Debugf("using config file: %s", filename)
-	if _, err := os.Stat(filename); err != nil {
-		// TODO: handle os.isnotexist(filename) and other errors differently
+	path := configPath(dest)
+	logrus.Debugf("using config file: %s", path)
+	if _, err := os.Stat(path); err != nil {
+		// TODO: handle os.isnotexist(path) and other errors differently
 		// error reading config file, create empty config ini.
 		logrus.Debugf("no config files found, initializing empty ini")
 	} else {
-		err = iniCfg.Append(filename)
+		err = iniCfg.Append(path)
 		if err != nil {
 			return nil, err
 		}
